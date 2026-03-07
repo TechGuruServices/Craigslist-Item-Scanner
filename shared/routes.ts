@@ -87,6 +87,23 @@ export const api = {
         200: z.object({ message: z.string() }),
       },
     }
+  },
+  ai: {
+    chat: {
+      method: 'POST' as const,
+      path: '/api/ai/chat' as const,
+      input: z.object({ message: z.string() }),
+      responses: {
+        200: z.object({ response: z.string() }),
+      }
+    },
+    messages: {
+      method: 'GET' as const,
+      path: '/api/ai/messages' as const,
+      responses: {
+        200: z.array(z.custom<typeof messages.$inferSelect>()),
+      }
+    }
   }
 };
 

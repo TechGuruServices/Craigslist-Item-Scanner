@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, RadioReceiver, RefreshCw, Activity } from "lucide-react";
+import { LayoutDashboard, RadioReceiver, RefreshCw, Activity, MessageSquare } from "lucide-react";
 import { useTriggerCheck } from "@/hooks/use-jobs";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -40,6 +40,7 @@ export function AppSidebar() {
   const navItems = [
     { title: "Dashboard", url: "/", icon: LayoutDashboard },
     { title: "Monitors", url: "/monitors", icon: RadioReceiver },
+    { title: "AI Assistant", url: "/chat", icon: MessageSquare },
   ];
 
   return (

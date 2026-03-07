@@ -11,6 +11,42 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // AI Chat API
+  app.get(api.ai.messages.path, async (_req, res) => {
+    const messages = await storage.getMessages();
+    res.json(messages);
+  });
+
+  app.post(api.ai.chat.path, async (req, res) => {
+    try {
+      const { message } = api.ai.chat.input.parse(req.body);
+      
+      // Save user message
+      await storage.createMessage({
+        role: "user",
+        content: message,
+      });
+
+      // Simple AI Response (Mock for now, or use an integration if available)
+      // In a real scenario, we'd call OpenAI/Anthropic here.
+      const aiContent = `I am your AI Assistant. You said: "${message}". I can help you monitor your RSS feeds and analyze the latest items.`;
+      
+      const assistantMessage = await storage.createMessage({
+        role: "assistant",
+        content: aiContent,
+      });
+
+      // assistantMessage.content contains the AI response
+      res.json({ response: assistantMessage.content });
+    } catch (err) {
+      console.error("AI Chat Error:", err);
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Monitors API
   app.get(api.monitors.list.path, async (req, res) => {
     const allMonitors = await storage.getMonitors();

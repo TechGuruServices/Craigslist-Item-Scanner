@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import Dashboard from "@/pages/dashboard";
 import Monitors from "@/pages/monitors";
+import Chat from "@/pages/chat";
 
 function Router() {
   return (
@@ -14,6 +15,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard}/>
         <Route path="/monitors" component={Monitors}/>
+        <Route path="/chat" component={Chat}/>
         <Route component={NotFound} />
       </Switch>
     </Layout>

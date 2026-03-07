@@ -11,6 +11,13 @@ export const monitors = pgTable("monitors", {
   lastChecked: timestamp("last_checked"),
 });
 
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const items = pgTable("items", {
   id: serial("id").primaryKey(),
   monitorId: integer("monitor_id").notNull(),
@@ -35,12 +42,16 @@ export const itemsRelations = relations(items, ({ one }) => ({
 
 export const insertMonitorSchema = createInsertSchema(monitors).omit({ id: true, lastChecked: true });
 export const insertItemSchema = createInsertSchema(items).omit({ id: true, createdAt: true });
+export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 
 export type Monitor = typeof monitors.$inferSelect;
 export type InsertMonitor = z.infer<typeof insertMonitorSchema>;
 
 export type Item = typeof items.$inferSelect;
 export type InsertItem = z.infer<typeof insertItemSchema>;
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type CreateMonitorRequest = InsertMonitor;
 export type UpdateMonitorRequest = Partial<InsertMonitor>;

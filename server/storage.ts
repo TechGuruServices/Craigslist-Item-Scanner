@@ -6,7 +6,9 @@ import {
   type InsertMonitor,
   type Item,
   type InsertItem,
-  type UpdateMonitorRequest
+  type UpdateMonitorRequest,
+  type Message,
+  type InsertMessage,
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
@@ -23,6 +25,10 @@ export interface IStorage {
   createItem(item: InsertItem): Promise<Item>;
   deleteItem(id: number): Promise<void>;
   getItemByGuid(guid: string): Promise<Item | undefined>;
+
+  // AI Chat
+  getMessages(): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -76,6 +82,15 @@ export class DatabaseStorage implements IStorage {
   async getItemByGuid(guid: string): Promise<Item | undefined> {
     const [item] = await db.select().from(items).where(eq(items.guid, guid));
     return item;
+  }
+
+  async getMessages(): Promise<Message[]> {
+    return await db.select().from(messages).orderBy(messages.createdAt);
+  }
+
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const [message] = await db.insert(messages).values(insertMessage).returning();
+    return message;
   }
 }
 
