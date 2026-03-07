@@ -27,9 +27,27 @@ export async function registerRoutes(
         content: message,
       });
 
-      // Simple AI Response (Mock for now, or use an integration if available)
-      // In a real scenario, we'd call OpenAI/Anthropic here.
-      const aiContent = `I am your AI Assistant. You said: "${message}". I can help you monitor your RSS feeds and analyze the latest items.`;
+      let aiContent = "";
+      try {
+        const ollamaResponse = await fetch("http://localhost:11434/api/generate", {
+          method: "POST",
+          body: JSON.stringify({
+            model: "llama3", // Defaulting to llama3, user can change if needed
+            prompt: message,
+            stream: false,
+          }),
+        });
+
+        if (ollamaResponse.ok) {
+          const data = await ollamaResponse.json() as { response: string };
+          aiContent = data.response;
+        } else {
+          throw new Error("Ollama connection failed");
+        }
+      } catch (error) {
+        console.error("Ollama error:", error);
+        aiContent = `I couldn't connect to your local Ollama instance at http://localhost:11434. Please make sure Ollama is running on your machine. (Error: ${error instanceof Error ? error.message : String(error)})`;
+      }
       
       const assistantMessage = await storage.createMessage({
         role: "assistant",
