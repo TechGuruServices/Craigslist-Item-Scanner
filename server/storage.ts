@@ -2,6 +2,7 @@ import { db } from "./db";
 import {
   monitors,
   items,
+  messages,
   type Monitor,
   type InsertMonitor,
   type Item,

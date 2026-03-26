@@ -54,7 +54,7 @@ export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type CreateMonitorRequest = InsertMonitor;
-export type UpdateMonitorRequest = Partial<InsertMonitor>;
+export type UpdateMonitorRequest = Partial<InsertMonitor> & { lastChecked?: Date | null };
 
 export type MonitorResponse = Monitor;
 export type MonitorsListResponse = Monitor[];
