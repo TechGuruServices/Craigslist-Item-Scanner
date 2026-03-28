@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { insertMonitorSchema, monitors, items, messages } from './schema';
 
-export const errorSchemas = {
+export const         errorSchemas = {
   validation: z.object({
     message: z.string(),
     field: z.string().optional(),

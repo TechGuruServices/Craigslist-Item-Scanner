@@ -1,6 +1,31 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables (contains secrets)
+.env
+.env.*
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Replit
+.replit
+.local/
+.cache/
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Misc
+.agents/
