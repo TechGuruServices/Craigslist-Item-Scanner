@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: craigslist-item-scanner
+    env: node
+    plan: starter # A paid plan (starter) is required so it doesn't sleep and stop your setInterval RSS scraper
+    region: ohio
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: DATABASE_URL
+        sync: false # You will input this manually in the Render Dashboard
+      - key: PORT
+        value: 5000
+      - key: NODE_VERSION
+        value: ~24.13.1
+      - key: OLLAMA_URL
+        sync: false
+      - key: OLLAMA_MODEL
+        sync: false
+      - key: CHECK_INTERVAL_MINUTES
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
