@@ -29,26 +29,31 @@ export async function registerRoutes(
 
       let aiContent = "";
       try {
-        const ollamaUrl = process.env.OLLAMA_URL || "http://localhost:11434/api/generate";
-        const ollamaModel = process.env.OLLAMA_MODEL || "qwen";
-        const ollamaResponse = await fetch(ollamaUrl, {
+        // Use user's requested config
+        const baseUrl = process.env.OLLAMA_API_URL || "http://localhost:11434";
+        const ollamaModel = process.env.MODEL_NAME || process.env.OLLAMA_MODEL || "qwen";
+        
+        const ollamaResponse = await fetch(`${baseUrl}/api/chat`, {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
             model: ollamaModel,
-            prompt: message,
+            messages: [{ role: "user", content: message }],
             stream: false,
           }),
         });
 
         if (ollamaResponse.ok) {
-          const data = await ollamaResponse.json() as { response: string };
-          aiContent = data.response;
+          const data = await ollamaResponse.json() as { message: { content: string } };
+          aiContent = data.message?.content || "No response received.";
         } else {
-          throw new Error("Ollama connection failed");
+          throw new Error(`Ollama connection failed with status: ${ollamaResponse.status}`);
         }
       } catch (error) {
         console.error("Ollama error:", error);
-        aiContent = `I couldn't connect to your Ollama instance at ${process.env.OLLAMA_URL || "http://localhost:11434"}. Please make sure Ollama is running. (Error: ${error instanceof Error ? error.message : String(error)})`;
+        aiContent = `I couldn't connect to your Ollama instance at ${process.env.OLLAMA_API_URL || "http://localhost:11434"}. Please make sure Ollama is running. (Error: ${error instanceof Error ? error.message : String(error)})`;
       }
 
       const assistantMessage = await storage.createMessage({
