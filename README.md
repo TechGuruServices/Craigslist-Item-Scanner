@@ -1,31 +1,24 @@
-# CraigsCatch — Craigslist Item Scanner
+# CraigsCatch — Craigslist Free Item Scanner
 
-A full-stack web application that monitors Craigslist RSS feeds for free items, with real-time Telegram alerts and an AI chat assistant powered by Ollama.
+A self-hosted web app (PWA) that monitors Craigslist RSS feeds for free items and sends real-time Telegram alerts.
 
 ## Features
 
-- **RSS Feed Monitoring** — Add Craigslist search URLs and automatically scan for new listings
-- **Telegram Alerts** — Get instant notifications when new free items appear
-- **AI Assistant** — Chat with a local Ollama-powered AI about your finds
-- **Dashboard** — Browse, filter, and manage discovered items
-- **Auto-Sync** — Configurable interval for automatic feed checking
+- 🔍 **RSS Feed Monitoring** — Add any Craigslist search RSS URL, auto-checks on a timer
+- 📨 **Telegram Alerts** — Instant notifications when new free items are posted
+- 🤖 **AI Assistant** — Chat with an Ollama-powered AI about your finds
+- 📱 **PWA** — Installable on mobile and desktop like a native app
+- 🗄️ **PostgreSQL** — Persistent storage via Drizzle ORM
 
-## Tech Stack
+---
 
-- **Frontend:** React 18, Vite, TailwindCSS, shadcn/ui, Framer Motion
-- **Backend:** Express 5, TypeScript, Drizzle ORM
-- **Database:** PostgreSQL (Neon, Supabase, or local)
-- **Alerts:** Telegram Bot API
-- **AI:** Ollama (local LLM)
-
-## Getting Started
+## Local Development
 
 ### Prerequisites
-
 - Node.js 20+
 - PostgreSQL database
-- (Optional) [Ollama](https://ollama.ai) for the AI assistant
-- (Optional) Telegram Bot for notifications
+- (Optional) [Ollama](https://ollama.ai) running locally for AI chat
+- (Optional) Telegram bot token
 
 ### Setup
 
@@ -43,10 +36,10 @@ A full-stack web application that monitors Craigslist RSS feeds for free items, 
 3. **Configure environment**
    ```bash
    cp .env.example .env
-   # Edit .env with your database URL and optional API keys
+   # Edit .env with your DATABASE_URL and optional settings
    ```
 
-4. **Push database schema**
+4. **Push the database schema**
    ```bash
    npm run db:push
    ```
@@ -55,28 +48,72 @@ A full-stack web application that monitors Craigslist RSS feeds for free items, 
    ```bash
    npm run dev
    ```
+   Open [http://localhost:5000](http://localhost:5000)
 
-   The app will be available at `http://localhost:5000`
-
-### Production Build
-
-```bash
-npm run build
-npm run start
-```
+---
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `PORT` | ❌ | Server port (default: 5000) |
-| `OLLAMA_URL` | ❌ | Ollama API URL (default: localhost:11434) |
-| `OLLAMA_MODEL` | ❌ | Ollama model name (default: qwen) |
-| `CHECK_INTERVAL_MINUTES` | ❌ | Feed check interval (default: 15) |
-| `TELEGRAM_BOT_TOKEN` | ❌ | Telegram bot token from @BotFather |
-| `TELEGRAM_CHAT_ID` | ❌ | Your Telegram chat ID |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DATABASE_URL` | ✅ Yes | — | PostgreSQL connection string |
+| `PORT` | No | `5000` | Server port |
+| `CHECK_INTERVAL_MINUTES` | No | `15` | How often to poll RSS feeds |
+| `OLLAMA_URL` | No | `http://localhost:11434/api/generate` | Ollama API endpoint |
+| `OLLAMA_MODEL` | No | `qwen` | Ollama model name |
+| `TELEGRAM_BOT_TOKEN` | No | — | From [@BotFather](https://t.me/botfather) |
+| `TELEGRAM_CHAT_ID` | No | — | Your Telegram user/group chat ID |
 
-## License
+---
 
-MIT
+## Deploy to Render
+
+### 1. Push to GitHub
+```bash
+git push origin main
+```
+
+### 2. Create a PostgreSQL database on Render
+- Go to [dashboard.render.com](https://dashboard.render.com)
+- **New → PostgreSQL** → pick free or starter tier
+- Copy the **Internal Database URL**
+
+### 3. Deploy the web service
+- **New → Blueprint** → connect your GitHub repo
+- Render detects `render.yaml` automatically
+- In the service's **Environment** tab, set:
+  - `DATABASE_URL` → paste the Internal Database URL
+  - `TELEGRAM_BOT_TOKEN` → your bot token (optional)
+  - `TELEGRAM_CHAT_ID` → your chat ID (optional)
+  - `OLLAMA_URL` → your Ollama instance URL (optional)
+
+### 4. Run database migrations
+After first deploy, open the Render **Shell** tab and run:
+```bash
+npm run db:push
+```
+
+### Getting Your Telegram Credentials
+1. Message [@BotFather](https://t.me/botfather) → `/newbot` → copy the token
+2. Message [@userinfobot](https://t.me/userinfobot) → it replies with your chat ID
+3. Start your bot first by messaging it, then add it to any group you want alerts in
+
+---
+
+## How It Works
+
+1. You add a Craigslist RSS URL (e.g. `https://yourcity.craigslist.org/search/zip?format=rss`)
+2. The server checks all active monitors every `CHECK_INTERVAL_MINUTES`
+3. New items are stored in PostgreSQL (deduped by RSS GUID)
+4. A Telegram alert is fired for each new item
+5. The dashboard shows all discovered items in real time
+
+---
+
+## Tech Stack
+
+- **Frontend**: React 18, Vite, TailwindCSS, shadcn/ui, Framer Motion
+- **Backend**: Express 5, Node.js
+- **Database**: PostgreSQL + Drizzle ORM
+- **AI**: Ollama (local LLM)
+- **Notifications**: Telegram Bot API
