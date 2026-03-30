@@ -4,9 +4,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "set NODE_ENV=development&& tsx server/index.ts",
+    "dev": "tsx server/index.ts",
     "build": "tsx script/build.ts",
-    "start": "set NODE_ENV=production&& node dist/index.cjs",
+    "start": "node dist/index.cjs",
     "check": "tsc",
     "db:push": "drizzle-kit push"
   },
@@ -26,6 +26,7 @@
     "cors": "^2.8.6",
     "date-fns": "^3.6.0",
     "dotenv": "^17.3.1",
+    "nanoid": "^3.3.11",
     "drizzle-orm": "^0.39.3",
     "drizzle-zod": "^0.7.0",
     "express": "^5.0.1",

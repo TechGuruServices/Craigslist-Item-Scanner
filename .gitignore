@@ -4,9 +4,10 @@ node_modules/
 # Build output
 dist/
 
-# Environment variables (contains secrets)
+# Environment variables (contains secrets) - DO NOT commit real .env
 .env
-.env.*
+.env.local
+.env.production
 
 # OS files
 .DS_Store
