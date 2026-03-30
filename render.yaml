@@ -3,7 +3,7 @@ services:
     name: craigslist-item-scanner
     runtime: node
     plan: starter
-    region: ohio
+    region: oregon
     buildCommand: npm install && npm run build
     startCommand: NODE_ENV=production node dist/index.cjs
     envVars:

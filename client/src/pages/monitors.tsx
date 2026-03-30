@@ -45,26 +45,28 @@ export default function Monitors() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-foreground tracking-tight">Active Monitors</h1>
-          <p className="text-muted-foreground mt-1 text-lg">Manage your Craigslist RSS feeds to scrape for free stuff.</p>
+    <div className="space-y-10 animate-in fade-in duration-700 pb-12 w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative">
+        <div className="relative z-10">
+          <h1 className="text-4xl font-display font-extrabold tracking-tight text-glow bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-primary bg-300% animate-gradient">
+            Active Monitors
+          </h1>
+          <p className="text-muted-foreground mt-2 text-lg font-medium">Manage your Craigslist RSS feeds to scrape for free stuff.</p>
         </div>
         
         <Button 
           onClick={handleCreate}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-xl px-6 py-5 h-auto hover:-translate-y-0.5 transition-all"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(20,184,166,0.4)] rounded-xl px-7 py-6 h-auto hover:-translate-y-1 transition-all duration-300 z-10"
         >
           <Plus className="w-5 h-5 mr-2" />
-          <span className="font-semibold text-base">Add Monitor</span>
+          <span className="font-bold text-base tracking-wide">Add Monitor</span>
         </Button>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-2xl border-border/50 shadow-2xl">
+        <DialogContent className="sm:max-w-[500px] rounded-3xl border-white/10 bg-background/95 backdrop-blur-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)]">
           <DialogHeader className="mb-4">
-            <DialogTitle className="text-2xl font-display">
+            <DialogTitle className="text-2xl font-display font-bold text-glow">
               {editingMonitor ? "Edit Monitor" : "Create Monitor"}
             </DialogTitle>
           </DialogHeader>
@@ -77,79 +79,83 @@ export default function Monitors() {
       </Dialog>
 
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {[1, 2, 3].map(i => (
-            <Card key={i} className="p-6">
-              <div className="flex gap-4">
-                <Skeleton className="w-12 h-12 rounded-full" />
-                <div className="space-y-2 flex-1">
-                  <Skeleton className="h-6 w-1/4 rounded" />
-                  <Skeleton className="h-4 w-1/2 rounded" />
+            <Card key={i} className="p-6 glass-card border-white/5 animate-pulse">
+              <div className="flex gap-5 items-center">
+                <Skeleton className="w-14 h-14 rounded-full bg-muted/50" />
+                <div className="space-y-3 flex-1">
+                  <Skeleton className="h-7 w-1/4 rounded-lg bg-muted/50" />
+                  <Skeleton className="h-5 w-1/2 rounded-md bg-muted/50" />
                 </div>
               </div>
             </Card>
           ))}
         </div>
       ) : monitors?.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center glass-panel rounded-3xl">
-          <div className="bg-primary/10 p-6 rounded-full mb-6 text-primary">
-            <RadioReceiver className="w-12 h-12" />
+        <div className="flex flex-col items-center justify-center py-32 text-center glass-panel rounded-[2rem]">
+          <div className="bg-primary/10 p-7 rounded-full mb-8 text-primary shadow-[0_0_40px_rgba(20,184,166,0.15)] ring-1 ring-primary/20">
+            <RadioReceiver className="w-14 h-14" />
           </div>
-          <h2 className="text-2xl font-display font-semibold mb-2">No monitors yet</h2>
-          <p className="text-muted-foreground max-w-md mb-8">
+          <h2 className="text-3xl font-display font-bold mb-3 text-glow">No monitors yet</h2>
+          <p className="text-muted-foreground text-lg max-w-md mb-10 font-medium">
             Create your first monitor by providing a Craigslist RSS search URL. We'll automatically fetch new items as they appear.
           </p>
           <Button 
             onClick={handleCreate}
             size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20 rounded-xl"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(20,184,166,0.4)] rounded-xl px-8 py-6 h-auto hover:-translate-y-1 transition-all duration-300"
           >
-            <Plus className="w-5 h-5 mr-2" />
-            Create Your First Monitor
+            <Plus className="w-5 h-5 mr-3" />
+            <span className="font-bold text-lg tracking-wide">Create First Monitor</span>
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {monitors?.map((monitor) => (
             <Card 
               key={monitor.id} 
-              className={`p-6 transition-all duration-300 hover:shadow-xl group border-l-4 ${
+              className={`p-7 transition-all duration-500 hover:shadow-2xl relative overflow-hidden group ${
                 monitor.active 
-                  ? "border-l-primary shadow-sm hover:border-l-primary bg-card" 
-                  : "border-l-muted-foreground/30 bg-muted/30 opacity-75"
+                  ? "glass-card hover-elevate border-l-4 border-l-primary hover:border-l-primary" 
+                  : "bg-background/40 border-l-4 border-l-muted-foreground/30 opacity-70 hover:opacity-100"
               }`}
             >
-              <div className="flex items-start justify-between gap-4">
+              {monitor.active && (
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 rounded-full blur-[50px] pointer-events-none group-hover:bg-primary/15 transition-colors duration-500" />
+              )}
+              
+              <div className="flex items-start justify-between gap-5 relative z-10">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold font-display text-foreground truncate">
+                  <div className="flex items-center gap-4 mb-3">
+                    <h3 className="text-2xl font-bold font-display text-foreground truncate group-hover:text-primary transition-colors">
                       {monitor.name}
                     </h3>
-                    <Badge variant={monitor.active ? "default" : "secondary"} className={monitor.active ? "bg-primary/10 text-primary hover:bg-primary/20 border-0" : ""}>
+                    <Badge variant={monitor.active ? "default" : "secondary"} className={`uppercase tracking-widest text-[10px] ${monitor.active ? "bg-primary/15 text-primary hover:bg-primary/30 border border-primary/20 shadow-[0_0_10px_rgba(20,184,166,0.1)] px-3 py-1" : "px-3 py-1 bg-muted text-muted-foreground"}`}>
                       {monitor.active ? "Active" : "Paused"}
                     </Badge>
                   </div>
                   
-                  <p className="text-sm text-muted-foreground font-mono truncate bg-muted/50 p-2 rounded-md border border-border/50 mb-4 inline-block max-w-full">
+                  <p className="text-sm text-foreground/70 font-mono truncate bg-background/50 backdrop-blur-sm p-3 rounded-lg border border-white/5 mb-6 inline-block max-w-full shadow-inner">
                     {monitor.url}
                   </p>
                   
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                    <Settings2 className="w-4 h-4" />
+                  <div className="flex items-center gap-2.5 text-xs text-muted-foreground font-semibold tracking-wide">
+                    <Settings2 className="w-4 h-4 text-primary/70" />
                     <span>
-                      Last checked: {monitor.lastChecked 
+                      LAST CHECK: {monitor.lastChecked 
                         ? format(new Date(monitor.lastChecked), "MMM d, yyyy h:mm a") 
-                        : "Never"}
+                        : "NEVER"}
                     </span>
                   </div>
                 </div>
                 
-                <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-x-2 group-hover:translate-x-0">
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={() => handleEdit(monitor)}
-                    className="hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors"
+                    className="hover:border-primary hover:text-primary hover:bg-primary/10 transition-colors border-white/10 shadow-sm rounded-lg"
                   >
                     <Edit2 className="w-4 h-4 mr-2" />
                     Edit
@@ -158,7 +164,7 @@ export default function Monitors() {
                     variant="outline" 
                     size="sm" 
                     onClick={() => handleDelete(monitor.id)}
-                    className="hover:border-destructive hover:text-destructive hover:bg-destructive/5 transition-colors"
+                    className="hover:border-destructive hover:text-destructive hover:bg-destructive/10 transition-colors border-white/10 shadow-sm rounded-lg"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete

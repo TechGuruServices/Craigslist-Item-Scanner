@@ -44,45 +44,55 @@ export function AppSidebar() {
   ];
 
   return (
-    <Sidebar className="border-r border-border/50 bg-card">
+    <Sidebar className="border-r border-white/5 bg-background/60 backdrop-blur-3xl shadow-2xl z-40">
       <SidebarContent>
-        <SidebarGroup className="py-6">
-          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-4 px-4">
+        <SidebarGroup className="py-8">
+          <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-6 px-6">
             Application
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    data-active={location === item.url}
-                    className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium transition-colors"
-                  >
-                    <Link href={item.url} className="flex items-center gap-3 px-4 py-2.5 rounded-lg">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+            <SidebarMenu className="px-3">
+              {navItems.map((item) => {
+                const isActive = location === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      data-active={isActive}
+                      className={`transition-all duration-300 rounded-xl mb-1 ${
+                        isActive 
+                          ? "bg-primary/10 text-primary font-semibold shadow-[0_0_15px_rgba(20,184,166,0.15)] border border-primary/20" 
+                          : "hover:bg-card hover:text-foreground text-muted-foreground hover:shadow-md border border-transparent"
+                      }`}
+                    >
+                      <Link href={item.url} className="flex items-center gap-3.5 px-3 py-3">
+                        <item.icon className="h-4 w-4" />
+                        <span className="text-sm">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-5 border-t border-white/5 bg-card/30">
         <button
           onClick={handleTrigger}
           disabled={isPending}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-primary-foreground bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/20 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200"
+          className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl font-semibold text-primary-foreground bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300"
         >
           <RefreshCw className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`} />
           {isPending ? 'Syncing Feeds...' : 'Force Sync Now'}
         </button>
-        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Activity className="h-3 w-3 text-primary" />
-          <span>System active</span>
+        <div className="mt-5 flex items-center justify-center gap-2 text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+          </span>
+          System Online
         </div>
       </SidebarFooter>
     </Sidebar>
