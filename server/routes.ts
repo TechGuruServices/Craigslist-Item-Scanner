@@ -29,31 +29,43 @@ export async function registerRoutes(
 
       let aiContent = "";
       try {
-        // Use user's requested config
-        const baseUrl = process.env.OLLAMA_API_URL || "http://localhost:11434";
-        const ollamaModel = process.env.MODEL_NAME || process.env.OLLAMA_MODEL || "qwen";
-        
-        const ollamaResponse = await fetch(`${baseUrl}/api/chat`, {
+        const groqApiKey = process.env.GROQ_API_KEY;
+        const model = process.env.MODEL_NAME || "llama3-8b-8192";
+
+        if (!groqApiKey) {
+          throw new Error("GROQ_API_KEY is not set in environment variables.");
+        }
+
+        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${groqApiKey}`,
           },
           body: JSON.stringify({
-            model: ollamaModel,
-            messages: [{ role: "user", content: message }],
-            stream: false,
+            model,
+            messages: [
+              {
+                role: "system",
+                content: "You are CraigsCatch AI, a helpful assistant that helps users find and evaluate free items on Craigslist. Be concise, friendly, and practical.",
+              },
+              { role: "user", content: message },
+            ],
+            temperature: 0.7,
+            max_tokens: 512,
           }),
         });
 
-        if (ollamaResponse.ok) {
-          const data = await ollamaResponse.json() as { message: { content: string } };
-          aiContent = data.message?.content || "No response received.";
+        if (groqResponse.ok) {
+          const data = await groqResponse.json() as { choices: { message: { content: string } }[] };
+          aiContent = data.choices?.[0]?.message?.content || "No response received.";
         } else {
-          throw new Error(`Ollama connection failed with status: ${ollamaResponse.status}`);
+          const errText = await groqResponse.text();
+          throw new Error(`Groq API error ${groqResponse.status}: ${errText}`);
         }
       } catch (error) {
-        console.error("Ollama error:", error);
-        aiContent = `I couldn't connect to your Ollama instance at ${process.env.OLLAMA_API_URL || "http://localhost:11434"}. Please make sure Ollama is running. (Error: ${error instanceof Error ? error.message : String(error)})`;
+        console.error("Groq AI error:", error);
+        aiContent = `⚠️ AI Error: ${error instanceof Error ? error.message : String(error)}`;
       }
 
       const assistantMessage = await storage.createMessage({
@@ -154,9 +166,45 @@ export async function registerRoutes(
     }
   });
 
-  // Setup periodic checking (every 15 minutes by default)
+  // Test Telegram API — sends a test message to verify bot token + chat ID
+  app.post("/api/test-telegram", async (_req: Request, res: Response) => {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+
+    if (!botToken || !chatId) {
+      return res.status(400).json({ 
+        ok: false, 
+        message: "TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set in your .env file." 
+      });
+    }
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: "✅ <b>CraigsCatch Telegram Test</b>\n\nYour Telegram notifications are working correctly! 🎉",
+          parse_mode: "HTML",
+        }),
+      });
+
+      const data = await response.json() as { ok: boolean; description?: string };
+
+      if (data.ok) {
+        return res.json({ ok: true, message: "Test message sent successfully! Check your Telegram." });
+      } else {
+        return res.status(400).json({ ok: false, message: data.description || "Telegram API returned an error." });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ ok: false, message: `Request failed: ${err.message}` });
+    }
+  });
+
+  // Setup periodic checking
   const intervalMinutes = parseInt(process.env.CHECK_INTERVAL_MINUTES || "15", 10);
   const CHECK_INTERVAL = intervalMinutes * 60 * 1000;
+  console.log(`[scheduler] Feed check interval: every ${intervalMinutes} minutes`);
   setInterval(() => {
     checkFeeds().catch(err => console.error("Periodic feed check failed:", err));
   }, CHECK_INTERVAL);
