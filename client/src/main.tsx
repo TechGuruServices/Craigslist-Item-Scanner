@@ -4,6 +4,9 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
+// Activate dark mode by default
+document.documentElement.classList.add("dark");
+
 // Register PWA service worker
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {

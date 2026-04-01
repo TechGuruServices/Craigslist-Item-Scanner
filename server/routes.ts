@@ -211,7 +211,11 @@ async function sendTelegramAlert(title: string, link: string, monitorName: strin
 
   if (!botToken || !chatId) return;
 
-  const text = `🚨 *New Free Item Found!* 🚨\n\n*${title}*\n\n[View on Craigslist](${link})\n_Monitor: ${monitorName}_`;
+  // Escape HTML characters to prevent breaking the HTML parse mode
+  const safeTitle = title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const safeMonitorName = monitorName.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const text = `🚨 <b>New Item Found!</b> 🚨\n\n<b>${safeTitle}</b>\n\n<a href="${link}">View on Craigslist</a>\n<i>Monitor: ${safeMonitorName}</i>`;
 
   try {
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -220,7 +224,7 @@ async function sendTelegramAlert(title: string, link: string, monitorName: strin
       body: JSON.stringify({
         chat_id: chatId,
         text,
-        parse_mode: "Markdown"
+        parse_mode: "HTML" // Switched to HTML as it is significantly less fragile than Markdown
       })
     });
 
@@ -231,3 +235,4 @@ async function sendTelegramAlert(title: string, link: string, monitorName: strin
     console.error("Failed to send Telegram alert:", err);
   }
 }
+
