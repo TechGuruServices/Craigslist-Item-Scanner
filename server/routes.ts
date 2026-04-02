@@ -5,7 +5,9 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import Parser from "rss-parser";
 
-const parser = new Parser();
+const parser = new Parser({
+  timeout: 10000, // 10s timeout per request to prevent hangs
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -201,13 +203,31 @@ export async function registerRoutes(
     }
   });
 
+  // Health check endpoint (uptime monitors ping this to prevent Render spin-down)
+  app.get("/health", (_req: Request, res: Response) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Telegram configuration check on startup
+  if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) {
+    console.warn("[telegram] ⚠️ TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set. Telegram alerts are DISABLED.");
+  } else {
+    console.log("[telegram] ✅ Telegram alerts configured for chat ID:", process.env.TELEGRAM_CHAT_ID);
+  }
+
   // Setup periodic checking
-  const intervalMinutes = parseInt(process.env.CHECK_INTERVAL_MINUTES || "15", 10);
+  const intervalMinutes = parseInt(process.env.CHECK_INTERVAL_MINUTES || "10", 10);
   const CHECK_INTERVAL = intervalMinutes * 60 * 1000;
   console.log(`[scheduler] Feed check interval: every ${intervalMinutes} minutes`);
   setInterval(() => {
     checkFeeds().catch(err => console.error("Periodic feed check failed:", err));
   }, CHECK_INTERVAL);
+
+  // Run initial feed check shortly after startup (gives DB connections time to establish)
+  setTimeout(() => {
+    console.log("[scheduler] Running initial feed check on startup...");
+    checkFeeds().catch(err => console.error("Startup feed check failed:", err));
+  }, 5000);
 
   return httpServer;
 }
@@ -240,6 +260,8 @@ async function checkFeeds() {
           newItemsCount++;
 
           await sendTelegramAlert(newItem.title, newItem.link, monitor.name);
+          // Throttle between messages to respect Telegram API rate limits
+          await new Promise(r => setTimeout(r, 250));
         }
       }
 
@@ -265,22 +287,57 @@ async function sendTelegramAlert(title: string, link: string, monitorName: strin
 
   const text = `🚨 <b>New Item Found!</b> 🚨\n\n<b>${safeTitle}</b>\n\n<a href="${link}">View on Craigslist</a>\n<i>Monitor: ${safeMonitorName}</i>`;
 
-  try {
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: "HTML" // Switched to HTML as it is significantly less fragile than Markdown
-      })
-    });
+  const maxRetries = 3;
+  const startTime = Date.now();
 
-    if (!response.ok) {
-      console.error("Telegram API Error:", await response.text());
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          parse_mode: "HTML",
+        }),
+      });
+
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const duration = Date.now() - startTime;
+        console.log(`[telegram] ✅ Sent alert for "${title}" (${duration}ms)`);
+        return;
+      }
+
+      // Handle rate limiting (HTTP 429)
+      if (response.status === 429) {
+        const body = await response.json() as { parameters?: { retry_after?: number } };
+        const retryAfter = body?.parameters?.retry_after || 5;
+        console.warn(`[telegram] ⏳ Rate limited. Retrying in ${retryAfter}s (attempt ${attempt}/${maxRetries})`);
+        await new Promise(r => setTimeout(r, retryAfter * 1000));
+        continue;
+      }
+
+      // Non-retryable API error
+      const errText = await response.text();
+      console.error(`[telegram] ❌ API error ${response.status}: ${errText}`);
+      return;
+
+    } catch (err: any) {
+      const isAbort = err.name === "AbortError";
+      console.error(`[telegram] ❌ ${isAbort ? "Timeout" : "Network error"} (attempt ${attempt}/${maxRetries}):`, err.message);
+      if (attempt < maxRetries) {
+        const backoff = 500 * Math.pow(2, attempt - 1); // 500ms, 1s, 2s exponential backoff
+        await new Promise(r => setTimeout(r, backoff));
+      }
     }
-  } catch (err) {
-    console.error("Failed to send Telegram alert:", err);
   }
+
+  console.error(`[telegram] ❌ Failed to send alert for "${title}" after ${maxRetries} attempts.`);
 }
 

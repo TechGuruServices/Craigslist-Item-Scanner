@@ -28,12 +28,21 @@ services:
       - key: OLLAMA_MODEL
         sync: false
 
-      # Scraper schedule
+      # Scraper schedule (must match .env for consistency)
       - key: CHECK_INTERVAL_MINUTES
-        value: "15"
+        value: "10"
 
-      # Telegram alerts (optional)
+      # Telegram alerts — must be manually set in Render Dashboard > Environment
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHAT_ID
         sync: false
+
+      # Groq AI
+      - key: GROQ_API_KEY
+        sync: false
+
+# ⚠️ IMPORTANT: Render Starter plan spins down after ~15 min of inactivity.
+# To keep the scheduler alive, set up a free uptime monitor (e.g., UptimeRobot)
+# to ping your /health endpoint every 10 minutes:
+#   https://YOUR-APP.onrender.com/health
