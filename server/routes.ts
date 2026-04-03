@@ -5,13 +5,37 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import Parser from "rss-parser";
 
-const parser = new Parser({
-  timeout: 10000, // 10s timeout per request to prevent hangs
-  headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-    'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-  },
-});
+const parser = new Parser();
+
+/**
+ * Fetch RSS feed XML using fetch() with browser-like headers,
+ * then parse it with rss-parser. Craigslist blocks Node's built-in
+ * http/https modules even with custom User-Agent headers.
+ */
+async function fetchFeed(feedUrl: string) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(feedUrl, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Status code ${response.status}`);
+    }
+
+    const xml = await response.text();
+    return await parser.parseString(xml);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -243,7 +267,7 @@ async function checkFeeds() {
     if (!monitor.active) continue;
 
     try {
-      const feed = await parser.parseURL(monitor.url);
+      const feed = await fetchFeed(monitor.url);
 
       let newItemsCount = 0;
       for (const item of feed.items) {
