@@ -3,25 +3,28 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import Parser from "rss-parser";
-
-const parser = new Parser();
 
 /**
- * Fetch RSS feed XML using fetch() with browser-like headers,
- * then parse it with rss-parser. Craigslist blocks Node's built-in
- * http/https modules even with custom User-Agent headers.
+ * Fetch HTML search results using fetch() with browser-like headers,
+ * then parse the static HTML structure using Regex. Craigslist blocked
+ * direct RSS feeds and Node's default User-Agents.
  */
 async function fetchFeed(feedUrl: string) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
 
+  // Safely remove the format=rss parameter
+  const urlObj = new URL(feedUrl);
+  urlObj.searchParams.delete('format');
+  const htmlUrl = urlObj.toString();
+  console.log(`[scraper] Fetching HTML from URL: ${htmlUrl}`);
+
   try {
-    const response = await fetch(feedUrl, {
+    const response = await fetch(htmlUrl, {
       signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
       },
     });
@@ -30,8 +33,39 @@ async function fetchFeed(feedUrl: string) {
       throw new Error(`Status code ${response.status}`);
     }
 
-    const xml = await response.text();
-    return await parser.parseString(xml);
+    const html = await response.text();
+    const items: Array<{ title: string; link: string; guid: string; contentSnippet: string; pubDate: string; content?: string }> = [];
+
+    // Craigslist static HTML items typically look like:
+    // <li class="cl-static-search-result" title="Title">[\s\S]*?<a href="https://link">
+    const staticRegex = /<li class="cl-static-search-result" title="([^"]+)">[\s\S]*?<a href="([^"]+)">/g;
+    let match;
+
+    // Simple HTML decoder for titles
+    const decodeHtml = (html: string) => {
+      return html
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&#x27;/g, "'");
+    };
+
+    while ((match = staticRegex.exec(html)) !== null) {
+      const title = decodeHtml(match[1]);
+      const link = match[2];
+      const guid = link; // Use URL as unique guid since it contains the item ID
+      items.push({
+        title,
+        link,
+        guid,
+        contentSnippet: title,
+        pubDate: new Date().toISOString(), // Use current time as fallback since static HTML lacks exact time
+      });
+    }
+
+    return { items };
   } finally {
     clearTimeout(timeout);
   }

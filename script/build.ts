@@ -13,7 +13,6 @@ const allowlist = [
   "express",
   "nanoid",
   "pg",
-  "rss-parser",
   "zod",
   "zod-validation-error",
 ];
